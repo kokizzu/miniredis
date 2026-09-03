@@ -574,11 +574,25 @@ func TestRename(t *testing.T) {
 		proto.Error("ERR no such key"),
 	)
 
-	// Same key
+	// Same key (non-existing)
 	mustDo(t, c,
 		"RENAME", "from", "from",
 		proto.Error("ERR no such key"),
 	)
+
+	t.Run("same key", func(t *testing.T) {
+		s.Set("same", "value")
+		s.SetTTL("same", time.Second*123)
+		mustOK(t, c, "RENAME", "same", "same")
+		equals(t, true, s.Exists("same"))
+		s.CheckGet(t, "same", "value")
+		equals(t, time.Second*123, s.TTL("same"))
+
+		s.HSet("samehash", "field", "value")
+		mustOK(t, c, "RENAME", "samehash", "samehash")
+		equals(t, true, s.Exists("samehash"))
+		equals(t, "value", s.HGet("samehash", "field"))
+	})
 
 	t.Run("string key", func(t *testing.T) {
 		s.Set("from", "value")
